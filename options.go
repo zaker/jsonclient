@@ -11,7 +11,7 @@ func WithHeaders[T any](h map[string]string) ClientOption[T] {
 	}
 }
 
-func WithClient[T any](requester Requester) ClientOption[T] {
+func WithClient[T any](requester HTTPDoer) ClientOption[T] {
 
 	return func(y *JSONClient[T]) error {
 		y.client = requester

@@ -13,7 +13,7 @@ import (
 )
 
 type JSONClient[T any] struct {
-	client       Requester
+	client       HTTPDoer
 	ctx          context.Context
 	baseUrl      *url.URL
 	headers      map[string]string
@@ -24,7 +24,7 @@ type QueryConfig struct {
 	params url.Values
 }
 
-type Requester interface {
+type HTTPDoer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
@@ -48,6 +48,7 @@ func NewClient[T any](baseUrlString string, options ...ClientOption[T]) (*JSONCl
 	return yc, nil
 }
 
+// GET perform a get request that parses the incoming json to the client type
 func (y *JSONClient[T]) GET(path string, options ...QueryOption) (T, error) {
 
 	qc := &QueryConfig{}
@@ -77,33 +78,29 @@ func (y *JSONClient[T]) makeHTTPRequest(
 	queryParameters url.Values,
 	body io.Reader) (T, error) {
 	u := y.baseUrl.JoinPath(path)
-	// if it's a GET, we need to append the query parameters.
+
 	if httpMethod == "GET" {
 		q := u.Query()
 
 		for k, v := range queryParameters {
-			// this depends on the type of api, you may need to do it for each of v
+
 			q.Set(k, strings.Join(v, ","))
 		}
-		// set the query to the encoded parameters
+
 		u.RawQuery = q.Encode()
 	}
 
-	// regardless of GET or POST, we can safely add the body
 	req, err := http.NewRequestWithContext(y.ctx, httpMethod, u.String(), body)
 	if err != nil {
 		return y.responseType, fmt.Errorf("error: creating new request: %w", err)
 	}
 
-	// for each header passed, add the header value to the request
 	for k, v := range y.headers {
 		req.Header.Set(k, v)
 	}
 
-	// optional: log the request for easier stack tracing
 	log.Printf("%s %s\n", httpMethod, req.URL.String())
 
-	// finally, do the request
 	res, err := y.client.Do(req)
 	if err != nil {
 		return y.responseType, err

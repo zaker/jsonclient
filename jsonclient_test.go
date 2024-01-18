@@ -25,7 +25,7 @@ type TestRow[T any] struct {
 	wantErr bool
 }
 
-var _ Requester = MockRequester{}
+var _ HTTPDoer = MockRequester{}
 var _ context.Context = MockContext{}
 
 type MockRequester struct {
